@@ -5,6 +5,7 @@ import http from 'http';
 import connectDB from './config/mongodb';
 import logger from './common/utils/logger';
 import mongoose from 'mongoose';
+import { startTokenCleanupJob, stopTokenCleanupJob } from './jobs/token-cleanup.job';
 
 const PORT = env.PORT || 3000;
 let server: http.Server | null = null;
@@ -22,12 +23,15 @@ const startServer = async () => {
       logger.info(`Server is running on port ${PORT}`);
     });
 
+    startTokenCleanupJob();
+
     // Handles rejected Promises that were not handled with catch/try-catch
     process.on('unhandledRejection', (err: Error) => {
       logger.error('UNHANDLED REJECTION: SHUTTING DOWN SERVER', err);
       if (server) {
         server.close(async () => {
           await mongoose.disconnect();
+          stopTokenCleanupJob();
           process.exit(1);
         });
       } else {
@@ -41,6 +45,7 @@ const startServer = async () => {
       if (server) {
         server.close(async () => {
           await mongoose.disconnect();
+          stopTokenCleanupJob();
           process.exit(0);
         });
       } else {

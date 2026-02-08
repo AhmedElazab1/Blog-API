@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 import crypto from 'crypto';
 import AppError from '../../../common/utils/ApiError';
 import { STATUS_CODE } from '../../../common/constants/constants';
+import { ITokenPayload } from '../../../common/Interfaces/types';
 
 export const generateSecureToken = (): string => {
   return crypto.randomBytes(32).toString('hex');
@@ -16,6 +17,15 @@ export const hashToken = (token: string): string => {
 export const generateAccessToken = (id: Types.ObjectId): string => {
   return jwt.sign({ id }, env.JWT_SECRET, {
     expiresIn: env.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'],
+  });
+};
+
+export const verifyAccessToken = (token: string): Promise<ITokenPayload> => {
+  return new Promise((resolve, reject) => {
+    jwt.verify(token, env.JWT_SECRET, (err, decoded) => {
+      if (err) return reject(err);
+      resolve(decoded as ITokenPayload);
+    });
   });
 };
 

@@ -9,6 +9,8 @@ import path from 'path';
 import cors from 'cors';
 import compression from 'compression';
 import mongoSanitize from 'express-mongo-sanitize';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger.config';
 
 // Custom modules
 import limiter from './config/limiter';
@@ -61,6 +63,36 @@ if (env.NODE_ENV === 'development') {
 } else {
   app.use(morgan('tiny', { stream: logStream }));
 }
+
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     summary: Root endpoint
+ *     description: Simple hello world endpoint
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Hello World message
+ */
+app.get('/', (req, res) => {
+  res.send('Hello World');
+});
+
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
+// Swagger Documentation
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'API Documentation',
+  }),
+);
 
 app.use('/api/v1', router);
 app.use(notFound);

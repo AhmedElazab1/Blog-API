@@ -34,7 +34,7 @@ export const register = catchAsync(async (req: Request, res: Response): Promise<
 export const login = catchAsync(async (req: Request, res: Response): Promise<void> => {
   // Get data from request body
   const data: LoginRequestDTO = req.body as LoginRequestDTO;
-  const { user, refreshToken } = await loginService(data);
+  const { user, refreshToken, accessToken } = await loginService(data);
 
   logger.info('User logged in successfully');
 
@@ -44,7 +44,10 @@ export const login = catchAsync(async (req: Request, res: Response): Promise<voi
   res.status(STATUS_CODE.SUCCESS).json({
     status: STATUS.SUCCESS,
     message: 'User logged in successfully',
-    data: user,
+    data: {
+      user,
+      accessToken,
+    },
   });
 });
 

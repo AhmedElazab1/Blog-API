@@ -27,3 +27,23 @@ export const blacklistAccessToken = async (token: string): Promise<void> => {
     );
   }
 };
+
+export const isTokenBlacklisted = async (token: string): Promise<boolean> => {
+  const blacklistedToken = await AccessTokenBlacklist.findOne({
+    token,
+  });
+
+  return !!blacklistedToken;
+};
+
+export const cleanupExpiredBlacklistedTokens = async (): Promise<number> => {
+  const expiredTokens = await AccessTokenBlacklist.find({
+    expiresAt: { $lt: new Date() },
+  });
+
+  await AccessTokenBlacklist.deleteMany({
+    expiresAt: { $lt: new Date() },
+  });
+
+  return expiredTokens.length;
+};

@@ -90,3 +90,15 @@ export const revokeAllRefreshTokens = async (userId: string) => {
     },
   );
 };
+
+export const cleanupExpiredTokens = async (): Promise<number> => {
+  const expiredTokens = await Token.find({
+    $or: [{ expiresAt: { $lt: new Date() } }, { revoked: true }],
+  });
+
+  await Token.deleteMany({
+    $or: [{ expiresAt: { $lt: new Date() } }, { revoked: true }],
+  });
+
+  return expiredTokens.length;
+};
