@@ -2,11 +2,19 @@ import { Request } from 'express';
 import type { IUser } from '../../models/types/types';
 import { JwtPayload } from 'jsonwebtoken';
 
-export interface IRequest extends Request {
-  user?: IUser;
-  accessToken?: string;
+declare global {
+  namespace Express {
+    interface User extends IUser {}
+    interface Request {
+      accessToken?: string;
+    }
+  }
 }
 
-export interface ITokenPayload extends JwtPayload {
-  id: string;
+declare global {
+  namespace Express {
+    interface ITokenPayload extends JwtPayload {
+      id: string;
+    }
+  }
 }

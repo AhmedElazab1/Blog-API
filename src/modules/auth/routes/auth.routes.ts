@@ -5,14 +5,18 @@ import {
   refresh,
   logout,
   logoutAll,
+  googleCallback,
+  getCurrentUser,
   getActiveSessions,
 } from '../controllers/auth.controller';
 import { userRegisterSchema } from '../validation/Auth.validation';
-import { validate } from '../../../common/middlewares/index';
 import { userLoginSchema } from '../validation/Auth.validation';
-import authenticate from '../../../common/middlewares/protect';
-import { authorize } from '../../../common/middlewares/restrictedTo';
+import { validate } from '../../../common/middlewares/index';
 import { UserRole } from '../../../models/types/types';
+import { authorize } from '../../../common/middlewares/restrictedTo';
+import authenticate from '../../../common/middlewares/protect';
+import passport from '../../../config/passport.config';
+import { loginLimiter, refreshLimiter } from '../../../config/limiter';
 
 const router = express.Router();
 
@@ -20,7 +24,7 @@ const router = express.Router();
  * @swagger
  * /api/v1/auth/register:
  *   post:
- *     summary: Register a new user
+ *     summary: Sign up
  *     description: Create a new user account using email and password
  *     tags: [Auth]
  *     security: []
@@ -59,6 +63,9 @@ const router = express.Router();
  *                 status:
  *                   type: string
  *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: User registered successfully
  *                 data:
  *                   type: object
  *                   properties:
@@ -93,7 +100,7 @@ router.post('/register', validate({ body: userRegisterSchema }), register);
  * @swagger
  * /api/v1/auth/login:
  *   post:
- *     summary: Login a user
+ *     summary: Login
  *     description: Login a user using email and password
  *     tags: [Auth]
  *     security: []
@@ -150,6 +157,17 @@ router.post('/register', validate({ body: userRegisterSchema }), register);
  *                         username:
  *                           type: string
  *                           example: John Doe
+ *                         role:
+ *                           type: string
+ *                           example: user
+ *                         socialLinks:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               website:
+ *                                 type: string
+ *                                 example: johndoe
  *                     accessToken:
  *                       type: string
  *                       example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
@@ -169,7 +187,45 @@ router.post('/register', validate({ body: userRegisterSchema }), register);
  *               $ref: '#/components/schemas/Error'
  */
 
-router.post('/login', validate({ body: userLoginSchema }), login);
+router.post('/login', validate({ body: userLoginSchema }), loginLimiter, login);
+
+/**
+ * @swagger
+ * /api/v1/auth/google:
+ *   get:
+ *     summary: Login with Google
+ *     description: Redirects to Google's authentication page for user login
+ *     tags: [Auth]
+ *     security: []
+ *     responses:
+ *       302:
+ *         description: Redirect to Google's authentication page
+ *
+ *       400:
+ *         description: Validation error or user not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
+router.get(
+  '/google',
+  passport.authenticate('google', { scope: ['email', 'profile'], session: false }),
+);
+
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { failureRedirect: '/login', session: false }),
+  googleCallback,
+);
 
 /**
  * @swagger
@@ -213,13 +269,13 @@ router.post('/login', validate({ body: userLoginSchema }), login);
  *         description: Internal server error
  */
 
-router.post('/refresh', refresh);
+router.post('/refresh', refreshLimiter, refresh);
 
 /**
  * @swagger
  * /api/v1/auth/logout:
  *   post:
- *     summary: Logout a user
+ *     summary: Logout
  *     description: Logout the user by blacklisting the access token and revoking the refresh token. Clears the refresh token cookie.
  *     tags: [Auth]
  *
@@ -273,7 +329,7 @@ router.post('/logout', logout);
  * @swagger
  * /api/v1/auth/logout-all:
  *   post:
- *     summary: Logout user from all sessions
+ *     summary: Logout All Users
  *     description: Blacklist the current access token and revoke all refresh tokens for the user. Clears the refresh token cookie.
  *     tags: [Auth]
  *
@@ -320,6 +376,77 @@ router.post('/logout', logout);
  */
 
 router.post('/logout-all', logoutAll);
+
+/**
+ * @swagger
+ * /api/v1/auth/me:
+ *   get:
+ *     summary: Get Me
+ *     description: Retrieve the authenticated user's information.
+ *     tags: [Auth]
+ *
+ *     security:
+ *       - bearerAuth: []   # Requires access token
+ *
+ *     responses:
+ *       200:
+ *         description: User information retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                           example: 65f1c2a9e8b1a2c3d4e5f678
+ *                         email:
+ *                           type: string
+ *                           example: user@example.com
+ *                         username:
+ *                           type: string
+ *                           example: John Doe
+ *                         role:
+ *                           type: string
+ *                           example: user
+ *                         firstName:
+ *                           type: string
+ *                           example: John
+ *                         lastName:
+ *                           type: string
+ *                           example: Doe
+ *                         socialLinks:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               website:
+ *                                 type: string
+ *                                 example: johndoe
+ *       400:
+ *         description: Validation error or user not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
+router.get('/me', getCurrentUser);
 
 /**
  * @swagger

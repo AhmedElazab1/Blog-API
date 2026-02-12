@@ -1,13 +1,11 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import env from '../../config/env';
-import { IRequest } from '../Interfaces/types';
 import { IUser } from '../../models/types/types';
 import AppError from '../utils/ApiError';
 import { STATUS_CODE } from '../../common/constants/constants';
 import { isTokenBlacklisted } from '../../modules/auth/services/blacklist.service';
 import { verifyAccessToken } from '../../modules/auth/services/token.service';
-import { ITokenPayload } from '../Interfaces/types';
 import User from '../../models/User';
 
 const extractBearerToken = (authHeader: string | undefined): string | null => {
@@ -17,7 +15,7 @@ const extractBearerToken = (authHeader: string | undefined): string | null => {
   return authHeader.split(' ')[1];
 };
 
-const authenticate = async (req: IRequest, res: Response, next: NextFunction) => {
+const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   // Extract token from request headers
   const token = extractBearerToken(req.headers.authorization);
 
@@ -32,7 +30,7 @@ const authenticate = async (req: IRequest, res: Response, next: NextFunction) =>
   }
 
   // Verify access token
-  const decodedToken: ITokenPayload = await verifyAccessToken(token);
+  const decodedToken: jwt.JwtPayload = await verifyAccessToken(token);
 
   // Find user by id
   const user = await User.findById(decodedToken.id);

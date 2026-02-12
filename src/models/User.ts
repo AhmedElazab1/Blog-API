@@ -5,7 +5,9 @@ const userSchema = new mongoose.Schema<IUser>(
   {
     username: {
       type: String,
-      required: true,
+      required: function (this: IUser) {
+        return !this.googleId;
+      },
       unique: true,
       trim: true,
     },
@@ -20,8 +22,16 @@ const userSchema = new mongoose.Schema<IUser>(
 
     password: {
       type: String,
-      required: true,
+      required: function (this: IUser) {
+        return !this.googleId;
+      },
       select: false,
+    },
+
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
 
     role: {

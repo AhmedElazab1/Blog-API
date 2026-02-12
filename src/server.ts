@@ -7,7 +7,7 @@ import logger from './common/utils/logger';
 import mongoose from 'mongoose';
 import { startTokenCleanupJob, stopTokenCleanupJob } from './jobs/token-cleanup.job';
 
-const PORT = env.PORT || 3000;
+const PORT = env.PORT || 8000;
 let server: http.Server | null = null;
 
 // Handles unexpected synchronous errors that were not caught anywhere

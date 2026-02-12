@@ -1,7 +1,15 @@
 import User from '../../../models/User';
 import { hashPassword, comparePassword } from '../../../common/utils/mongoose-utils';
 import { sanitizeUser } from '../mappers/user.mapper';
-import { UserRequestDTO, UserResponseDTO, LoginRequestDTO, LoginResponseDTO } from '../DTOs/types';
+import {
+  UserRequestDTO,
+  UserResponseDTO,
+  LoginRequestDTO,
+  LoginResponseDTO,
+  RefreshTokenResponse,
+  RegisterResponseDTO,
+  RegisterRequestDTO,
+} from '../DTOs/types';
 import AppError from '../../../common/utils/ApiError';
 import { STATUS_CODE } from '../../../common/constants/constants';
 import { generateAccessToken } from './token.service';
@@ -18,6 +26,8 @@ import env from '../../../config/env';
 import ms from 'ms';
 import RefreshToken from '../../../models/RefreshToken';
 import { Types } from 'mongoose';
+import Email from '../../../common/utils/Email';
+import logger from '../../../common/utils/logger';
 
 export const setRefreshTokenCookie = (res: Response, refreshToken: string): void => {
   res.cookie('refreshToken', refreshToken, {
@@ -36,7 +46,10 @@ export const clearRefreshTokenCookie = (res: Response): void => {
   });
 };
 
-export const signupService = async (data: UserRequestDTO): Promise<UserResponseDTO> => {
+export const signupService = async (
+  data: RegisterRequestDTO,
+  url: string,
+): Promise<RegisterResponseDTO> => {
   const { username, email, password } = data;
 
   // Hash password
@@ -48,6 +61,14 @@ export const signupService = async (data: UserRequestDTO): Promise<UserResponseD
     email,
     password: hashedPassword,
   });
+
+  // Send welcome email
+  try {
+    const sendEmail = new Email(user, url);
+    await sendEmail.sendWelcome();
+  } catch (err) {
+    logger.error('Error sending welcome email:', err);
+  }
 
   // Return sanitized user
   return sanitizeUser(user);
@@ -121,6 +142,14 @@ export const logoutAllService = async (userId: string, accessToken: string): Pro
   await revokeAllRefreshTokens(userId);
 };
 
+export const getCurrentUserService = async (userId: Types.ObjectId): Promise<UserResponseDTO> => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError('User not found', STATUS_CODE.NOT_FOUND);
+  }
+  return sanitizeUser(user) as UserResponseDTO;
+};
+
 export const getActiveSessionsService = async (userId: string) => {
   const sessions = await RefreshToken.find({
     userId,
@@ -130,4 +159,12 @@ export const getActiveSessionsService = async (userId: string) => {
     .select('userId expiresAt')
     .sort({ createdAt: -1 });
   return sessions;
+};
+
+export const googleCallbackService = async (
+  userId: Types.ObjectId,
+): Promise<{ accessToken: string; refreshToken: RefreshTokenResponse }> => {
+  const accessToken = generateAccessToken(userId);
+  const refreshToken = await createRefreshToken({ userId });
+  return { accessToken, refreshToken };
 };

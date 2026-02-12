@@ -1,10 +1,12 @@
 import { z } from 'zod';
 import { userRegisterSchema, userLoginSchema } from '../validation/Auth.validation';
 import { Types } from 'mongoose';
+import { partial } from 'zod/v4/core/util.cjs';
 
 export type UserRequestDTO = z.infer<typeof userRegisterSchema>;
 
 export interface UserResponseDTO {
+  _id: Types.ObjectId;
   username: string;
   email: string;
   role: string;
@@ -18,6 +20,13 @@ export interface UserResponseDTO {
     linkedin?: string;
     youtube?: string;
   };
+}
+
+export type RegisterRequestDTO = z.infer<typeof userRegisterSchema>;
+
+export interface RegisterResponseDTO {
+  username: string;
+  email: string;
 }
 
 export type LoginRequestDTO = z.infer<typeof userLoginSchema>;

@@ -11,6 +11,7 @@ import compression from 'compression';
 import mongoSanitize from 'express-mongo-sanitize';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger.config';
+import passport from 'passport';
 
 // Custom modules
 import limiter from './config/limiter';
@@ -19,6 +20,7 @@ import { notFound } from './common/middlewares/notFound';
 import errorHandler from './common/errors/errorHandler';
 
 // Types
+import './common/Interfaces/types';
 import { CorsOptions } from 'cors';
 
 const app = express();
@@ -28,7 +30,7 @@ const logStream = fs.createWriteStream(path.join(process.cwd(), 'logs', 'api.log
 });
 
 const corsOptions: CorsOptions = {
-  origin: 'https://localhost:3000',
+  origin: 'http://localhost:8000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -41,6 +43,7 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cors(corsOptions));
 app.use(limiter);
+app.use(passport.initialize());
 
 // Compatibility middleware for express-mongo-sanitize with Express 5
 app.use((req, res, next) => {

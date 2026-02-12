@@ -51,7 +51,10 @@ const swaggerDefinition: SwaggerDefinition = {
     },
   },
 
-  tags: [{ name: 'Auth', description: 'Authentication endpoints' }],
+  tags: [
+    { name: 'Auth', description: 'Authentication endpoints' },
+    { name: 'Users', description: 'User endpoints' },
+  ],
 };
 
 const options: swaggerJsdoc.Options = {

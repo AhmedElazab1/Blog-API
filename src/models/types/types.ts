@@ -10,6 +10,7 @@ export interface IUser {
   username: string;
   email: string;
   password: string;
+  googleId?: string;
   role: UserRole;
   firstName?: string;
   lastName?: string;

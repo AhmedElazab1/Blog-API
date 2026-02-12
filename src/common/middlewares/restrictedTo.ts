@@ -1,11 +1,10 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { UserRole } from '../../models/types/types';
 import ApiErrorHandler from '../utils/ApiError';
-import { IRequest } from '../Interfaces/types';
 import { STATUS_CODE } from '../constants/constants';
 
 export const authorize = (...allowedRoles: UserRole[]) => {
-  return (req: IRequest, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return next(
         new ApiErrorHandler('Please login to access this route', STATUS_CODE.UNAUTHORIZED),
@@ -23,5 +22,3 @@ export const authorize = (...allowedRoles: UserRole[]) => {
     next();
   };
 };
-
-export const restrictedTo = authorize;
